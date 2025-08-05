@@ -1,0 +1,51 @@
+# Visual Studio generated files
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.vcxproj.filters
+*.vcxproj.user
+
+# Build outputs
+Debug/
+Release/
+x64/
+x86/
+TestProject/
+*.exe
+*.obj
+*.pdb
+*.idb
+*.ilk
+*.lib
+*.dll
+*.exp
+
+# MSBuild temporary files
+*.tlog
+*.log
+*.lastbuildstate
+*.iobj
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.vspscc
+*.vssscc
+
+# Visual Studio temp files
+.vs/
+*.sln.docstates
+*.userprefs
+*.pidb
+*.booproj
+
+# Other
+.DS_Store
+Thumbs.db

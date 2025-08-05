@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Third-party legacy target - represents other legacy code you cannot modify -->
+  <!-- This target uses traditional PreprocessorDefinitions approach, inheriting and potentially affecting global state -->
+  <Target Name="CompileThirdTarget">
+    <ItemGroup>
+      <ClCompile Include="ThirdModule.cpp">
+        <!-- Test: adding a simple PreprocessorDefinitions modification -->
+        <!--<PreprocessorDefinitions>MODULE_THREE=1;THIRD_TARGET=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>-->
+      </ClCompile>
+    </ItemGroup>
+  </Target>
+
+  <PropertyGroup>
+    <BeforeClCompileTargets>$(BeforeClCompileTargets);CompileThirdTarget</BeforeClCompileTargets>
+  </PropertyGroup>
+
+</Project>
