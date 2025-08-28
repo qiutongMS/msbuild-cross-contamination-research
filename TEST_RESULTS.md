@@ -194,23 +194,22 @@ Third Module Function Called:
 
 1. **Cross-contamination occurs when multiple targets use the same property inheritance** - both PreprocessorDefinitions and AdditionalOptions create separate accumulation chains
 2. **MSB8027 warnings appear when multiple targets use the same inheritance mechanism** indicating duplicate file compilation
-3. **Mixed approach is a dead-end solution** - only works with exactly 2 targets, fails with 3 or more
-4. **Property scarcity is the real limitation** - only PreprocessorDefinitions and AdditionalOptions are available for inheritance
+3. **Mixed approach has limited applicability** - works with 2 targets in our test, would face challenges with 3 or more
+4. **Two compiler definition properties observed** - PreprocessorDefinitions and AdditionalOptions available in single target config
 5. **Order matters within the same property chain** - later targets inherit accumulated definitions from earlier targets using the same property
-6. **No warning doesn't mean scalable solution** - clean build with 2 targets doesn't solve the fundamental N>2 problem
+6. **Clean build with 2 targets achieved** - but scalability would be constrained by available property mechanisms
 
 ## Conclusion
 
-The test results reveal the true nature of MSBuild's item metadata inheritance system:
+The test results document the behavior of MSBuild's item metadata inheritance system:
 
-**Corrected Understanding:**
+**Test Findings:**
 - **Per-property accumulation chains**: Each property (PreprocessorDefinitions, AdditionalOptions) maintains its own inheritance chain
-- **Property scarcity problem**: Only 2 properties are available for compiler definitions, limiting solution to 2 targets maximum
-- **Multi-user property contamination**: When multiple targets use the same property with inheritance (`%(PropertyName)`), they contaminate each other
-- **Mixed-property illusion**: While using different properties avoids contamination, it's not a scalable solution
+- **Property-specific behavior**: Two compiler definition properties available for inheritance patterns in our testing
+- **Multi-user property contamination**: When multiple targets use the same property with inheritance (`%(PropertyName)`), they accuminate values
+- **Mixed-property isolation**: Using different properties for different targets achieved clean separation in our 2-target test
 
-**Practical Reality:**
-- Mixed approach only works for projects with exactly 2 custom compilation targets
-- Any real-world project with 3+ targets will force property reuse and trigger contamination
-- The "solution" is actually a demonstration of the fundamental limitation
-- Property inheritance in MSBuild is inherently unscalable for multiple targets
+**Observed Limitations:**
+- Mixed approach worked for our 2-target scenario
+- Additional targets would need to reuse properties, potentially triggering contamination
+- Property availability appears to constrain this approach's scalability

@@ -32,6 +32,9 @@ Each target follows this seemingly reasonable pattern:
     </ClCompile>
   </ItemGroup>
 </Target>
+<PropertyGroup>
+  <BeforeClCompileTargets>$(BeforeClCompileTargets);CompileFirstTarget</BeforeClCompileTargets>
+</PropertyGroup>
 ```
 
 **Expected behavior:** Each file gets global definitions + its own specific definitions, with no cross-contamination.
@@ -198,30 +201,28 @@ msbuild TestProject.vcxproj /p:Configuration=Debug /p:Platform=Win32
 
 ## Conclusion
 
-This research demonstrates the **fundamental scalability limitations of MSBuild property inheritance**. The key findings are:
+This research documents the behavior of MSBuild property inheritance when multiple targets attempt file-level isolation. Our test results show:
 
-**Root Cause Clarification:**
-- Cross-contamination occurs when **multiple targets use the same property inheritance** (e.g., multiple targets using `%(PreprocessorDefinitions)`)
-- Each property maintains its own accumulation chain - PreprocessorDefinitions and AdditionalOptions are separate
-- **Property scarcity is the real blocker**: Only 2 properties are available for compiler definitions
+**Observed Behavior:**
+- Cross-contamination occurs when multiple targets use the same property inheritance (e.g., multiple targets using `%(PreprocessorDefinitions)`)
+- Each property (PreprocessorDefinitions, AdditionalOptions) maintains its own accumulation chain
+- Mixed-property approach works for our test case with 2 targets
 
-**The Scalability Problem:**
-- **Maximum 2 targets**: Mixed-property approach only works with exactly 2 targets
-- **No third option**: There is no third property mechanism available for additional targets  
-- **Inevitable contamination**: Any project with 3+ targets must reuse properties, triggering cross-contamination
-- **Not practically solvable**: The limitation is architectural, not implementation-based
+**Test Results Summary:**
+- **Test Case 1 & 2**: Cross-contamination when multiple targets use the same property
+- **Test Case 3**: Clean isolation when each target uses a different property
+- **Limitation observed**: Only 2 compiler definition properties are available for this approach
 
-**When Problems Occur:**
-- Any project requiring more than 2 custom compilation targets
+**Practical Observations:**
+- Mixed approach successfully isolates 2 targets in our testing
+- The approach would face challenges with 3+ targets due to property availability
+- Different projects may have different requirements and constraints
+
+**When Issues Were Observed:**
 - Multiple BeforeTargets="ClCompile" targets using the same property inheritance
-- Real-world scenarios where Mixed Approach cannot scale
+- Scenarios requiring more than 2 custom compilation targets with inheritance
 
-**Reality Check:**
-- Mixed approach demonstrates the limitation rather than providing a solution
-- True file-level isolation in MSBuild is fundamentally limited by property availability
-- Alternative build systems or architectural changes are needed for complex scenarios
-
-The findings confirm that **MSBuild inheritance patterns do not scale beyond 2 targets** when file-level isolation is required.
+Our findings provide data points for teams evaluating MSBuild target design patterns and understanding cross-contamination behavior in their specific contexts.
 
 ## Contributing
 
