@@ -180,7 +180,11 @@ Third Module Function Called:
   - Compiled by: ThirdTarget.targets
 ```
 
-**Result**: Appears to work! But this is the "fragile success" scenario - it only works because ThirdTarget does not append any value.
+**Result**: **This appears to work, but is extremely fragile and impractical!** While each target achieves isolation by using different property mechanisms, this approach has critical limitations:
+- **Limited scalability**: Only works with exactly 2 targets (PreprocessorDefinitions + AdditionalOptions)
+- **No third option**: There's no third property mechanism available for additional targets
+- **Real-world impracticality**: Most projects need more than 2 custom compilation targets
+- **Breaks immediately**: Adding any third target forces reuse of a property, causing contamination
 
 ---
 
@@ -188,13 +192,25 @@ Third Module Function Called:
 
 ## Key Observations
 
-1. **%(PreprocessorDefinitions) and %(AdditionalOptions) behave identically** - both cause global state contamination
-2. **MSB8027 warnings consistently appear** when multiple targets use inheritance patterns
-3. **"Fragile success" scenarios** only work in controlled conditions with limited participants
-4. **True isolation requires giving up inheritance** - you can't have both
-5. **Order matters** - later targets inherit accumulated definitions from earlier targets
-6. **No warning doesn't mean no contamination** - runtime behavior reveals the truth
+1. **Cross-contamination occurs when multiple targets use the same property inheritance** - both PreprocessorDefinitions and AdditionalOptions create separate accumulation chains
+2. **MSB8027 warnings appear when multiple targets use the same inheritance mechanism** indicating duplicate file compilation
+3. **Mixed approach is a dead-end solution** - only works with exactly 2 targets, fails with 3 or more
+4. **Property scarcity is the real limitation** - only PreprocessorDefinitions and AdditionalOptions are available for inheritance
+5. **Order matters within the same property chain** - later targets inherit accumulated definitions from earlier targets using the same property
+6. **No warning doesn't mean scalable solution** - clean build with 2 targets doesn't solve the fundamental N>2 problem
 
 ## Conclusion
 
-The test results confirm that MSBuild's item metadata inheritance system is fundamentally incompatible with file-level isolation goals. Any solution that appears to work is likely fragile and will break when additional targets or third-party code joins the build.
+The test results reveal the true nature of MSBuild's item metadata inheritance system:
+
+**Corrected Understanding:**
+- **Per-property accumulation chains**: Each property (PreprocessorDefinitions, AdditionalOptions) maintains its own inheritance chain
+- **Property scarcity problem**: Only 2 properties are available for compiler definitions, limiting solution to 2 targets maximum
+- **Multi-user property contamination**: When multiple targets use the same property with inheritance (`%(PropertyName)`), they contaminate each other
+- **Mixed-property illusion**: While using different properties avoids contamination, it's not a scalable solution
+
+**Practical Reality:**
+- Mixed approach only works for projects with exactly 2 custom compilation targets
+- Any real-world project with 3+ targets will force property reuse and trigger contamination
+- The "solution" is actually a demonstration of the fundamental limitation
+- Property inheritance in MSBuild is inherently unscalable for multiple targets

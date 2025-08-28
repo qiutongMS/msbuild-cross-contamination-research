@@ -76,11 +76,12 @@ PreprocessorDefinitions = MODULE_THREE=1;THIRD_TARGET=1;MODULE_TWO=1;SECOND_TARG
 
 ### Why This Happens
 
-MSBuild's `%(PreprocessorDefinitions)` mechanism has a fundamental limitation:
+MSBuild's `%(PreprocessorDefinitions)` and `%(AdditionalOptions)` mechanisms have a critical limitation when used in multiple BeforeTargets:
 
-1. **Global State Sharing**: When Target A modifies a ClCompile item's PreprocessorDefinitions, it affects the "baseline" for subsequent targets
-2. **Item Metadata Propagation**: `%(PreprocessorDefinitions)` doesn't reference a static value - it references the current accumulated state
-3. **Execution Order Dependency**: Later targets inherit definitions from earlier targets, creating unintended dependencies
+1. **Same-Property Interference**: When multiple targets modify the same property (PreprocessorDefinitions OR AdditionalOptions), they interfere with each other
+2. **Cumulative State Accumulation**: Each target that uses `%(PropertyName)` inherits the accumulated state from all previous targets that modified the same property
+3. **Execution Order Dependency**: Later targets inherit all modifications from earlier targets using the same property mechanism
+4. **Multiple Compilation Triggers**: The same file gets compiled multiple times as different targets add it with different pproperty value to the ClCompile item group
 
 ### The MSBuild Mental Model Problem
 
@@ -91,12 +92,16 @@ SecondTarget: GLOBAL_DEFINE + MODULE_TWO    (isolated)
 ThirdTarget:  GLOBAL_DEFINE + MODULE_THREE  (isolated)
 ```
 
-**What actually happens:**
+**What actually happens when multiple targets use the same mechanism:**
 ```
 FirstTarget:  GLOBAL_DEFINE + MODULE_ONE
 SecondTarget: GLOBAL_DEFINE + MODULE_ONE + MODULE_TWO
 ThirdTarget:  GLOBAL_DEFINE + MODULE_ONE + MODULE_TWO + MODULE_THREE
 ```
+
+### The Real Root Cause
+
+The fundamental issue is not that PreprocessorDefinitions and AdditionalOptions always contaminate - **the problem occurs when multiple targets use the same inheritance mechanism**. When two or more BeforeTargets="ClCompile" targets modify the same property (either PreprocessorDefinitions or AdditionalOptions), each subsequent target inherits the accumulated changes from all previous targets.
 
 ## Attempted Solutions and Their Limitations
 
@@ -109,20 +114,23 @@ ThirdTarget:  GLOBAL_DEFINE + MODULE_ONE + MODULE_TWO + MODULE_THREE
 </ClCompile>
 ```
 
-**Result:** If all three targets use AdditionalOptions with `%(AdditionalOptions)`, the same cross-contamination occurs as with PreprocessorDefinitions. The global state sharing problem persists.
+**Result:** When multiple targets use AdditionalOptions with `%(AdditionalOptions)`, the same cross-contamination occurs as with PreprocessorDefinitions. **The key insight: it's not about which property you use, but about how many targets use the same property.**
 
 ### Attempt 2: Mixed Approach
 
 **Strategy:** Use different mechanisms for different targets
 - FirstTarget: AdditionalOptions
 - SecondTarget: PreprocessorDefinitions  
-- ThirdTarget: Minimal/disabled
+- ThirdTarget: No inheritance (minimal/disabled)
 
-**Result:** Appears to work in controlled conditions, but **extremely fragile**. As soon as any option is used in more than one ClCompile item, it breaks this balance and reverts to the previous cross-contamination behavior.
+**Result:** **This appears to work, but is extremely limited and impractical!** While avoiding contamination by using different properties, this approach has fatal scalability issues:
+- **Maximum 2 targets**: Only PreprocessorDefinitions and AdditionalOptions are available
+- **No solution for 3+ targets**: Any additional target must reuse a property, causing contamination
+- **Not a real solution**: Demonstrates the fundamental limitation rather than solving it
 
 ### The Fundamental Problem
 
-**The core issue is that `<ClCompile Include="file.cpp">` does not create file-scoped modifications**. When you specify metadata within a ClCompile item:
+**The core issue is not file-scoped vs global-scoped modifications**. The problem is **property-specific accumulation chains**. When you specify metadata within a ClCompile item:
 
 ```xml
 <ClCompile Include="FirstModule.cpp">
@@ -130,9 +138,17 @@ ThirdTarget:  GLOBAL_DEFINE + MODULE_ONE + MODULE_TWO + MODULE_THREE
 </ClCompile>
 ```
 
-This appears to be setting preprocessor definitions "for FirstModule.cpp only", but **MSBuild doesn't work this way**. The Include attribute only identifies which file to compile - the metadata modifications affect the global ClCompile item type state.
+This works fine in isolation. However, when a second target also uses `%(PreprocessorDefinitions)`:
 
-**None of these approaches solve the core issue**: MSBuild's item metadata system inherently shares global state. True file-level isolation is architecturally impossible when using `%(...)` inheritance patterns.
+```xml
+<ClCompile Include="SecondModule.cpp">
+  <PreprocessorDefinitions>MODULE_TWO=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+</ClCompile>
+```
+
+The second target's `%(PreprocessorDefinitions)` now includes MODULE_ONE=1 from the first target, causing accumulation.
+
+**The corrected understanding**: MSBuild maintains separate accumulation chains for each property. Multiple targets can coexist as long as they don't share the same property inheritance mechanism.
 
 ## Implications for Real-World Projects
 
@@ -146,10 +162,11 @@ This appears to be setting preprocessor definitions "for FirstModule.cpp only", 
 ### The "Precarious" Nature of Workarounds
 
 Any solution based on MSBuild target coordination is inherently fragile because:
-1. **Requires universal cooperation** - all participants must follow the same conventions
-2. **Breaks with legacy code** - older targets may use problematic patterns
-3. **Vulnerable to third-party code** - NuGet packages can disrupt the entire scheme
-4. **Execution order dependent** - subtle changes in target order can break everything
+1. **Property scarcity**: Only 2 properties available, limiting to 2 targets maximum
+2. **Breaks with scale**: Any project needing 3+ custom targets forces property reuse
+3. **Breaks with legacy code** - older targets may use problematic patterns
+4. **Vulnerable to third-party code** - NuGet packages can disrupt the entire scheme
+5. **Execution order dependent** - subtle changes in target order can break everything
 
 ## Recommendations
 
@@ -181,12 +198,30 @@ msbuild TestProject.vcxproj /p:Configuration=Debug /p:Platform=Win32
 
 ## Conclusion
 
-This research demonstrates that **file-level preprocessor definition isolation in MSBuild is fundamentally limited**. While workarounds exist, they are fragile and break in realistic scenarios with legacy or third-party code.
+This research demonstrates the **fundamental scalability limitations of MSBuild property inheritance**. The key findings are:
 
-The findings suggest that developers should either:
-1. Accept MSBuild's global-state model and design accordingly
-2. Use alternative build systems for projects requiring true isolation
-3. Restructure projects to avoid the need for file-level definition differences
+**Root Cause Clarification:**
+- Cross-contamination occurs when **multiple targets use the same property inheritance** (e.g., multiple targets using `%(PreprocessorDefinitions)`)
+- Each property maintains its own accumulation chain - PreprocessorDefinitions and AdditionalOptions are separate
+- **Property scarcity is the real blocker**: Only 2 properties are available for compiler definitions
+
+**The Scalability Problem:**
+- **Maximum 2 targets**: Mixed-property approach only works with exactly 2 targets
+- **No third option**: There is no third property mechanism available for additional targets  
+- **Inevitable contamination**: Any project with 3+ targets must reuse properties, triggering cross-contamination
+- **Not practically solvable**: The limitation is architectural, not implementation-based
+
+**When Problems Occur:**
+- Any project requiring more than 2 custom compilation targets
+- Multiple BeforeTargets="ClCompile" targets using the same property inheritance
+- Real-world scenarios where Mixed Approach cannot scale
+
+**Reality Check:**
+- Mixed approach demonstrates the limitation rather than providing a solution
+- True file-level isolation in MSBuild is fundamentally limited by property availability
+- Alternative build systems or architectural changes are needed for complex scenarios
+
+The findings confirm that **MSBuild inheritance patterns do not scale beyond 2 targets** when file-level isolation is required.
 
 ## Contributing
 
