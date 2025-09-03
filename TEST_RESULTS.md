@@ -77,7 +77,7 @@ Build succeeded.
 
 ## Even though the build has no warning, we lost the global define value!!.
 
-# OriginalDemo
+# Demo2
 
 ## Build Result
 
