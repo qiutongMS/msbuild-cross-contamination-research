@@ -18,5 +18,7 @@ int main() {
     std::cout << std::endl;
     std::cout << "Build completed successfully!" << std::endl;
     
+    // Keep console window open
+    system("pause");
     return 0;
 }

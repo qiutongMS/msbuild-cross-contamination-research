@@ -6,6 +6,7 @@
   <Target Name="CompileThirdTarget">
     <ItemGroup>
       <ClCompile Include="ThirdModule.cpp">
+        <PrecompiledHeader>NotUsing</PrecompiledHeader>
         <!-- Test: adding a simple PreprocessorDefinitions modification -->
         <!--<PreprocessorDefinitions>MODULE_THREE=1;THIRD_TARGET=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>-->
       </ClCompile>
