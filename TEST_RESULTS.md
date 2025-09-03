@@ -1,215 +1,113 @@
-# Test Results Documentation
+# OriginalDemo
 
-This document records the actual build outputs and behaviors observed when testing different MSBuild preprocessor definition configurations.
+## Build Result
 
-## Test Environment
+```
+"C:\Users\qiutongshen\source\testBeforeTargets\OriginalDemo\testBeforeTargets.sln" (Rebuild target) (1) ->
+"C:\Users\qiutongshen\source\testBeforeTargets\OriginalDemo\TestProject.vcxproj" (Rebuild target) (2) ->
+(WarnCompileDuplicatedFilename target) ->
+  C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(1129,5): warning MSB8027: Two or more files with the name of SecondModule.cpp will produce outputs to the same location. This can lead to an incorrect build result.  The files involved are SecondModule.cpp, SecondModule.cpp. [C:\Users\qiutongshen\source\testBeforeTargets\OriginalDemo\TestProject.vcxproj]
 
-- **MSBuild Version**: Microsoft Visual Studio 2022 MSBuild
-- **Platform**: Windows 10/11
-- **Configuration**: Debug|Win32
-- **Project**: TestProject.vcxproj with hierarchical target imports
+"C:\Users\qiutongshen\source\testBeforeTargets\OriginalDemo\testBeforeTargets.sln" (Rebuild target) (1) ->
+"C:\Users\qiutongshen\source\testBeforeTargets\OriginalDemo\TestProject.vcxproj" (Rebuild target) (2) ->
+(Link target) ->
+  TestProject\x64\Release\SecondModule.obj : warning LNK4042: object specified more than once; extras ignored [C:\Users\qiutongshen\source\testBeforeTargets\OriginalDemo\TestProject.vcxproj]
 
-## Test Case 1: All Targets Using PreprocessorDefinitions
-
-### Configuration
-```xml
-<!-- FirstTarget.targets -->
-<ClCompile Include="FirstModule.cpp">
-  <PreprocessorDefinitions>MODULE_ONE=1;FIRST_TARGET=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-</ClCompile>
-
-<!-- SecondTarget.targets -->
-<ClCompile Include="SecondModule.cpp">
-  <PreprocessorDefinitions>MODULE_TWO=1;SECOND_TARGET=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-</ClCompile>
-
-<!-- ThirdTarget.targets -->
-<ClCompile Include="ThirdModule.cpp">
-  <!-- No specific preprocessor definitions - acts as a "detector" to show global state -->
-</ClCompile>
+    2 Warning(s)
+    0 Error(s)
 ```
 
-### Build Output
-```
-warning MSB8027: Two or more files with the name of SecondModule.cpp will produce outputs to the same location
-```
+---
 
-### Compilation Commands (from .tlog files)
-```bash
-# FirstModule.cpp (compiled once)
-/D MODULE_ONE=1 /D FIRST_TARGET=1 /D GLOBAL_DEFINE=1 /D _UNICODE /D UNICODE
+## Debug Result
 
-# SecondModule.cpp (compiled multiple times)
-# First compilation:
-/D MODULE_TWO=1 /D SECOND_TARGET=1 /D GLOBAL_DEFINE=1 /D _UNICODE /D UNICODE
-# Second compilation:
-/D MODULE_TWO=1 /D SECOND_TARGET=1 /D MODULE_ONE=1 /D FIRST_TARGET=1 /D GLOBAL_DEFINE=1 /D _UNICODE /D UNICODE
+### First Module Function Called
 
-# ThirdModule.cpp (compiled once)
-/D GLOBAL_DEFINE=1 /D _UNICODE /D UNICODE
-```
-
-### Runtime Output
-```
-First Module Function Called:
   - GLOBAL_DEFINE is defined (value: 1)
   - GLOBAL_ADDITIONAL is defined (value: 1)
   - MODULE_ONE is defined (value: 1)
   - FIRST_TARGET is defined (value: 1)
   - MODULE_TWO is NOT defined
   - SECOND_TARGET is NOT defined
-  - MODULE_THREE is NOT defined
-  - THIRD_TARGET is NOT defined
   - Compiled by: FirstTarget.targets
 
-Second Module Function Called:
+### Second Module Function Called
+
   - GLOBAL_DEFINE is defined (value: 1)
   - GLOBAL_ADDITIONAL is defined (value: 1)
-  - MODULE_ONE is defined (value: 1)  ← Unexpected!
-  - FIRST_TARGET is defined (value: 1)  ← Unexpected!
+  - MODULE_ONE is defined (value: 1)
+  - FIRST_TARGET is defined (value: 1)
   - MODULE_TWO is defined (value: 1)
   - SECOND_TARGET is defined (value: 1)
-  - MODULE_THREE is NOT defined
-  - THIRD_TARGET is NOT defined
   - Compiled by: SecondTarget.targets
 
-Third Module Function Called:
-  - GLOBAL_DEFINE is defined (value: 1)
-  - GLOBAL_ADDITIONAL is defined (value: 1)
-  - MODULE_ONE is NOT defined
-  - FIRST_TARGET is NOT defined
-  - MODULE_TWO is NOT defined
-  - SECOND_TARGET is NOT defined
-  - MODULE_THREE is NOT defined
-  - THIRD_TARGET is NOT defined
-  - Compiled by: ThirdTarget.targets
-```
 
+# Demo1(Qiutong's revert PR)
 
+## Build Result
 
-**Result**: Complete cross-contamination. 
-
----
-
-## Test Case 2: All Targets Using AdditionalOptions
-
-### Configuration
-```xml
-<!-- FirstTarget.targets -->
-<ClCompile Include="FirstModule.cpp">
-  <AdditionalOptions>/D MODULE_ONE=1 /D FIRST_TARGET=1 %(AdditionalOptions)</AdditionalOptions>
-</ClCompile>
-
-<!-- SecondTarget.targets -->
-<ClCompile Include="SecondModule.cpp">
-  <AdditionalOptions>/D MODULE_TWO=1 /D SECOND_TARGET=1 %(AdditionalOptions)</AdditionalOptions>
-</ClCompile>
-
-<!-- ThirdTarget.targets -->
-<ClCompile Include="ThirdModule.cpp">
-  <!-- No specific preprocessor definitions - acts as a "detector" to show global state -->
-</ClCompile>
-```
-
-### Build Output
-```
-warning MSB8027: Two or more files with the name of SecondModule.cpp will produce outputs to the same location
-```
-
-### Runtime Output
-**Result**: Same cross-contamination as Test Case 1. The global state sharing problem persists with AdditionalOptions.
-
----
-
-## Test Case 3: Mixed Approach (Fragile Success)
-
-### Configuration
-```xml
-<!-- FirstTarget.targets -->
-<ClCompile Include="FirstModule.cpp">
-  <AdditionalOptions>/D MODULE_ONE=1 /D FIRST_TARGET=1 %(AdditionalOptions)</AdditionalOptions>
-</ClCompile>
-
-<!-- SecondTarget.targets -->
-<ClCompile Include="SecondModule.cpp">
-  <PreprocessorDefinitions>MODULE_TWO=1;SECOND_TARGET=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-</ClCompile>
-
-<!-- ThirdTarget.targets (disabled) -->
-<!-- <ClCompile Include="ThirdModule.cpp"> ... </ClCompile> -->
-```
-
-### Build Output
 ```
 Build succeeded.
-0 Warning(s)
-0 Error(s)
+    0 Warning(s)
+    0 Error(s)
 ```
 
-### Runtime Output
+---
+
+## Debug Result
+
+### First Module Function Called
+
+  - GLOBAL_DEFINE is NOT defined
+  - GLOBAL_ADDITIONAL is defined (value: 1)
+  - MODULE_ONE is NOT defined
+  - FIRST_TARGET is NOT defined
+  - MODULE_TWO is NOT defined
+  - SECOND_TARGET is NOT defined
+  - Compiled by: FirstTarget.targets
+
+### Second Module Function Called
+  - GLOBAL_DEFINE is NOT defined
+  - GLOBAL_ADDITIONAL is defined (value: 1)
+  - MODULE_ONE is NOT defined
+  - FIRST_TARGET is NOT defined
+  - MODULE_TWO is NOT defined
+  - SECOND_TARGET is NOT defined
+  - Compiled by: SecondTarget.targets
+
+## Even though the build has no warning, we lost the global define value!!.
+
+# OriginalDemo
+
+## Build Result
+
 ```
-First Module Function Called:
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+```
+
+---
+
+## Debug Result
+
+### First Module Function Called
+
   - GLOBAL_DEFINE is defined (value: 1)
   - GLOBAL_ADDITIONAL is defined (value: 1)
   - MODULE_ONE is defined (value: 1)
   - FIRST_TARGET is defined (value: 1)
   - MODULE_TWO is NOT defined
   - SECOND_TARGET is NOT defined
-  - MODULE_THREE is NOT defined
-  - THIRD_TARGET is NOT defined
   - Compiled by: FirstTarget.targets
-Second Module Function Called:
+
+### Second Module Function Called
+
   - GLOBAL_DEFINE is defined (value: 1)
   - GLOBAL_ADDITIONAL is defined (value: 1)
   - MODULE_ONE is NOT defined
   - FIRST_TARGET is NOT defined
   - MODULE_TWO is defined (value: 1)
   - SECOND_TARGET is defined (value: 1)
-  - MODULE_THREE is NOT defined
-  - THIRD_TARGET is NOT defined
   - Compiled by: SecondTarget.targets
-Third Module Function Called:
-  - GLOBAL_DEFINE is defined (value: 1)
-  - GLOBAL_ADDITIONAL is defined (value: 1)
-  - MODULE_ONE is NOT defined
-  - FIRST_TARGET is NOT defined
-  - MODULE_TWO is NOT defined
-  - SECOND_TARGET is NOT defined
-  - MODULE_THREE is NOT defined
-  - THIRD_TARGET is NOT defined
-  - Compiled by: ThirdTarget.targets
-```
 
-**Result**: **This appears to work, but is extremely fragile and impractical!** While each target achieves isolation by using different property mechanisms, this approach has critical limitations:
-- **Limited scalability**: Only works with exactly 2 targets (PreprocessorDefinitions + AdditionalOptions)
-- **No third option**: There's no third property mechanism available for additional targets
-- **Real-world impracticality**: Most projects need more than 2 custom compilation targets
-- **Breaks immediately**: Adding any third target forces reuse of a property, causing contamination
-
----
-
----
-
-## Key Observations
-
-1. **Cross-contamination occurs when multiple targets use the same property inheritance** - both PreprocessorDefinitions and AdditionalOptions create separate accumulation chains
-2. **MSB8027 warnings appear when multiple targets use the same inheritance mechanism** indicating duplicate file compilation
-3. **Mixed approach has limited applicability** - works with 2 targets in our test, would face challenges with 3 or more
-4. **Two compiler definition properties observed** - PreprocessorDefinitions and AdditionalOptions available in single target config
-5. **Order matters within the same property chain** - later targets inherit accumulated definitions from earlier targets using the same property
-6. **Clean build with 2 targets achieved** - but scalability would be constrained by available property mechanisms
-
-## Conclusion
-
-The test results document the behavior of MSBuild's item metadata inheritance system:
-
-**Test Findings:**
-- **Per-property accumulation chains**: Each property (PreprocessorDefinitions, AdditionalOptions) maintains its own inheritance chain
-- **Property-specific behavior**: Two compiler definition properties available for inheritance patterns in our testing
-- **Multi-user property contamination**: When multiple targets use the same property with inheritance (`%(PropertyName)`), they accuminate values
-- **Mixed-property isolation**: Using different properties for different targets achieved clean separation in our 2-target test
-
-**Observed Limitations:**
-- Mixed approach worked for our 2-target scenario
-- Additional targets would need to reuse properties, potentially triggering contamination
-- Property availability appears to constrain this approach's scalability
