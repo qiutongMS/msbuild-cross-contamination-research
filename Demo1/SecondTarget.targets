@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+<Target Name="SetSecondPreprocessorDefinitions" BeforeTargets="BeforeClCompile" >
+  <PropertyGroup>
+    <SecondPreprocessorDefinitions></SecondPreprocessorDefinitions>
+    <SecondPreprocessorDefinitions>MODULE_TWO=1;SECOND_TARGET=1;%(ClCompile.PreprocessorDefinitions)</SecondPreprocessorDefinitions>
+  </PropertyGroup>
+</Target>
+
+<Target Name="CompileSecondTarget">
+  <ItemGroup>
+    <ClCompile Include="SecondModule.cpp">
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PreprocessorDefinitions>$(SecondPreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemGroup>
+</Target>
+
+  <PropertyGroup>
+    <BeforeClCompileTargets>$(BeforeClCompileTargets);CompileSecondTarget</BeforeClCompileTargets>
+  </PropertyGroup>
+
+</Project>
