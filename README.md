@@ -124,7 +124,7 @@ The fundamental issue is not that PreprocessorDefinitions and AdditionalOptions 
 **Strategy:** Use different mechanisms for different targets
 - FirstTarget: AdditionalOptions
 - SecondTarget: PreprocessorDefinitions  
-- ThirdTarget: No inheritance (minimal/disabled)
+- ThirdTarget: No inheritance and no other settings (minimal/disabled)
 
 **Result:** **This appears to work, but is extremely limited and impractical!** While avoiding contamination by using different properties, this approach has fatal scalability issues:
 - **Maximum 2 targets**: Only PreprocessorDefinitions and AdditionalOptions are available
@@ -170,64 +170,3 @@ Any solution based on MSBuild target coordination is inherently fragile because:
 3. **Breaks with legacy code** - older targets may use problematic patterns
 4. **Vulnerable to third-party code** - NuGet packages can disrupt the entire scheme
 5. **Execution order dependent** - subtle changes in target order can break everything
-
-## Recommendations
-
-### For New Projects
-1. **Design for MSBuild's limitations** - don't rely on file-level isolation
-2. **Use conditional compilation** (`#ifdef`) instead of separate targets when possible
-3. **Consider external build tools** for complex scenarios
-
-### For Existing Projects
-1. **Audit all MSBuild targets** for PreprocessorDefinitions usage
-2. **Test with realistic configurations** - don't rely on simplified test cases
-3. **Have fallback strategies** for when isolation breaks
-
-### Alternative Approaches
-1. **Separate projects** for components requiring different settings
-2. **External preprocessing** tools to handle definitions outside MSBuild
-3. **Build system alternatives** (CMake, Bazel) with better isolation guarantees
-
-## Testing This Project
-
-```bash
-# Build with problematic configuration
-msbuild TestProject.vcxproj /p:Configuration=Debug /p:Platform=Win32
-
-# Check build logs for cross-contamination evidence
-# Look for MSB8027 warnings
-# Examine compilation commands in .tlog files
-```
-
-## Conclusion
-
-This research documents the behavior of MSBuild property inheritance when multiple targets attempt file-level isolation. Our test results show:
-
-**Observed Behavior:**
-- Cross-contamination occurs when multiple targets use the same property inheritance (e.g., multiple targets using `%(PreprocessorDefinitions)`)
-- Each property (PreprocessorDefinitions, AdditionalOptions) maintains its own accumulation chain
-- Mixed-property approach works for our test case with 2 targets
-
-**Test Results Summary:**
-- **Test Case 1 & 2**: Cross-contamination when multiple targets use the same property
-- **Test Case 3**: Clean isolation when each target uses a different property
-- **Limitation observed**: Only 2 compiler definition properties are available for this approach
-
-**Practical Observations:**
-- Mixed approach successfully isolates 2 targets in our testing
-- The approach would face challenges with 3+ targets due to property availability
-- Different projects may have different requirements and constraints
-
-**When Issues Were Observed:**
-- Multiple BeforeTargets="ClCompile" targets using the same property inheritance
-- Scenarios requiring more than 2 custom compilation targets with inheritance
-
-Our findings provide data points for teams evaluating MSBuild target design patterns and understanding cross-contamination behavior in their specific contexts.
-
-## Contributing
-
-This project serves as a research tool for understanding MSBuild behavior. Contributions, additional test cases, and documentation improvements are welcome.
-
-## License
-
-This project is provided as-is for educational and research purposes.
