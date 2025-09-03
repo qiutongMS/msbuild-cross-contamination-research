@@ -16,8 +16,7 @@ The goal was to achieve file-level isolation - where each target can:
 TestProject.vcxproj          # Main project with global GLOBAL_DEFINE=1
 ├── zeroTarget.targets       # Imports all child targets
     ├── FirstTarget.targets  # Compiles FirstModule.cpp with MODULE_ONE=1
-    ├── SecondTarget.targets # Compiles SecondModule.cpp with MODULE_TWO=1
-    └── ThirdTarget.targets  # Compiles ThirdModule.cpp with MODULE_THREE=1
+    └── SecondTarget.targets # Compiles SecondModule.cpp with MODULE_TWO=1
 ```
 
 ### The Common Pattern Attempt
@@ -45,7 +44,7 @@ Each target follows this seemingly reasonable pattern:
 
 When all targets are active, MSBuild produces:
 ```
-warning MSB8027: Two or more files with the name of SecondModule.cpp and thirdModule.cpp will produce outputs to the same location
+warning MSB8027: Two or more files with the name of SecondModule.cpp will produce outputs to the same location
 ```
 
 This indicates **duplicate compilation** - the same file is being processed multiple times.
@@ -62,18 +61,9 @@ PreprocessorDefinitions = MODULE_ONE=1;FIRST_TARGET=1;GLOBAL_DEFINE=1;_UNICODE;U
 PreprocessorDefinitions = MODULE_TWO=1;SECOND_TARGET=1;GLOBAL_DEFINE=1;_UNICODE;UNICODE;
 # SecondModule.cpp second time compilation command shows:
 PreprocessorDefinitions = MODULE_TWO=1;SECOND_TARGET=1;MODULE_ONE=1;FIRST_TARGET=1;GLOBAL_DEFINE=1;_UNICODE;UNICODE;
-
-# ThirdModule.cpp compilation first time command shows:
-PreprocessorDefinitions = MODULE_THREE=1;THIRD_TARGET=1;GLOBAL_DEFINE=1;_UNICODE;UNICODE;
-# ThirdModule.cpp compilation second time command shows:
-PreprocessorDefinitions = MODULE_THREE=1;THIRD_TARGET=1;MODULE_ONE=1;FIRST_TARGET=1;GLOBAL_DEFINE=1;_UNICODE;UNICODE;
-# ThirdModule.cpp compilation third time command shows:
-PreprocessorDefinitions = MODULE_THREE=1;THIRD_TARGET=1;MODULE_TWO=1;SECOND_TARGET=1;GLOBAL_DEFINE=1;_UNICODE;UNICODE;
-# ThirdModule.cpp compilation final time command shows:
-PreprocessorDefinitions = MODULE_THREE=1;THIRD_TARGET=1;MODULE_TWO=1;SECOND_TARGET=1;MODULE_ONE=1;FIRST_TARGET=1;GLOBAL_DEFINE=1;_UNICODE;UNICODE;
 ```
 
-**Second and third module ends up with wrong definitions**, defeating the purpose of target-specific configuration.
+**Second module ends up with wrong definitions**, defeating the purpose of target-specific configuration.
 
 ## Root Cause Analysis
 
@@ -91,15 +81,13 @@ MSBuild's `%(PreprocessorDefinitions)` and `%(AdditionalOptions)` mechanisms hav
 **What developers expect:**
 ```
 FirstTarget:  GLOBAL_DEFINE + MODULE_ONE    (isolated)
-SecondTarget: GLOBAL_DEFINE + MODULE_TWO    (isolated)  
-ThirdTarget:  GLOBAL_DEFINE + MODULE_THREE  (isolated)
+SecondTarget: GLOBAL_DEFINE + MODULE_TWO    (isolated)
 ```
 
 **What actually happens when multiple targets use the same mechanism:**
 ```
 FirstTarget:  GLOBAL_DEFINE + MODULE_ONE
 SecondTarget: GLOBAL_DEFINE + MODULE_ONE + MODULE_TWO
-ThirdTarget:  GLOBAL_DEFINE + MODULE_ONE + MODULE_TWO + MODULE_THREE
 ```
 
 ### The Real Root Cause
@@ -123,8 +111,7 @@ The fundamental issue is not that PreprocessorDefinitions and AdditionalOptions 
 
 **Strategy:** Use different mechanisms for different targets
 - FirstTarget: AdditionalOptions
-- SecondTarget: PreprocessorDefinitions  
-- ThirdTarget: No inheritance and no other settings (minimal/disabled)
+- SecondTarget: PreprocessorDefinitions
 
 **Result:** **This appears to work, but is extremely limited and impractical!** While avoiding contamination by using different properties, this approach has fatal scalability issues:
 - **Maximum 2 targets**: Only PreprocessorDefinitions and AdditionalOptions are available

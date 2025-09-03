@@ -49,3 +49,44 @@ TestProject/
 # Other
 .DS_Store
 Thumbs.db
+
+# Ignore MSBuild binary logs
+**/msbuild.binlog
+msbuild.binlog
+
+# Ignore Visual Studio build output (obj, pdb, log, etc.) in all demo folders
+**/TestProject/**/Debug/
+**/TestProject/**/Release/
+**/TestProject/**/x64/Debug/
+**/TestProject/**/x64/Release/
+**/TestProject/**/Win32/Debug/
+**/TestProject/**/Win32/Release/
+**/TestProject/**/*.obj
+**/TestProject/**/*.pdb
+**/TestProject/**/*.log
+**/TestProject/**/*.ilk
+**/TestProject/**/*.tlog/
+**/TestProject/**/*.ipdb
+**/TestProject/**/*.iobj
+**/TestProject/**/*.exe.recipe
+**/TestProject/**/*.FileListAbsolute.txt
+
+# Ignore solution user settings
+*.suo
+*.user
+*.VC.db
+*.VC.VC.opendb
+
+# Ignore VS Code settings
+.vscode/
+
+# Ignore other temp files
+*.tmp
+*.bak
+*.cache
+
+# Ignore build output in root
+Debug/
+x64/
+Win32/
+Release/
