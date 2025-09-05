@@ -1,7 +1,7 @@
 #include <iostream>
 
-void firstModuleFunction() {
-    std::cout << "First Module Function Called:" << std::endl;
+void secondModuleFunction() {
+    std::cout << "Second Module Function Called:" << std::endl;
     
 #ifdef GLOBAL_DEFINE
     std::cout << "  - GLOBAL_DEFINE is defined (value: " << GLOBAL_DEFINE << ")" << std::endl;
@@ -39,11 +39,5 @@ void firstModuleFunction() {
     std::cout << "  - SECOND_TARGET is NOT defined" << std::endl;
 #endif
 
-#ifdef EXTRA_FIRST
-    std::cout << "  - EXTRA_FIRST is defined (value: " << EXTRA_FIRST << ")" << std::endl;
-#else
-    std::cout << "  - EXTRA_FIRST is NOT defined" << std::endl;
-#endif
-
-    std::cout << "  - Compiled by: FirstTarget.targets" << std::endl;
+    std::cout << "  - Compiled by: SecondTarget.targets" << std::endl;
 }

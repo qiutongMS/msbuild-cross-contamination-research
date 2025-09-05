@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <Target Name="CompileSecondDefinition" BeforeTargets="BeforeClCompile">
+  <Target Name="CompileSecondDefinition" BeforeTargets="ClCompile" AfterTargets="$(BeforeClCompileTargets);$(ComputeCompileInputsTargets);MakeDirsForCl">
     <ItemGroup>
       <ClCompile>
         <PreprocessorDefinitions>MODULE_TWO=1;SECOND_TARGET=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
