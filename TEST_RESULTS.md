@@ -153,7 +153,7 @@ Build succeeded.
 ### Not sure if I tried correctly, and this may trigger warning C4651 and be treated as an error in WinUI
 
 
-# Demo4(set all properties before ClCompiles,after $(BeforeClCompileTargets);$(ComputeCompileInputsTargets);MakeDirsForCl)
+# Demo4(set all properties before ClCompiles, after $(BeforeClCompileTargets);$(ComputeCompileInputsTargets);MakeDirsForCl)
 
 ## Build Result
 
@@ -185,6 +185,41 @@ Build succeeded.
   - FIRST_TARGET is NOT defined
   - MODULE_TWO is NOT defined
   - SECOND_TARGET is NOT defined
+  - Compiled by: SecondTarget.targets
+
+# Demo5(set all properties before ClCompiles, after MakeDirsForCl)
+
+## Build Result
+
+```
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+```
+
+---
+
+## Debug Result
+
+### First Module Function Called
+
+  - GLOBAL_DEFINE is defined (value: 1)
+  - GLOBAL_ADDITIONAL is defined (value: 1)
+  - MODULE_ONE is defined (value: 1)
+  - FIRST_TARGET is defined (value: 1)
+  - MODULE_TWO is defined (value: 1)
+  - SECOND_TARGET is defined (value: 1)
+  - EXTRA_FIRST is defined (value: 1)
+  - Compiled by: FirstTarget.targets
+
+### Second Module Function Called
+
+  - GLOBAL_DEFINE is defined (value: 1)
+  - GLOBAL_ADDITIONAL is defined (value: 1)
+  - MODULE_ONE is defined (value: 1)
+  - FIRST_TARGET is defined (value: 1)
+  - MODULE_TWO is defined (value: 1)
+  - SECOND_TARGET is defined (value: 1)
   - Compiled by: SecondTarget.targets
 
 ### Not sure if I tried correctly, and this may trigger warning C4651 and be treated as an error in WinUI
