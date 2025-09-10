@@ -21,28 +21,10 @@ void firstModuleFunction() {
     std::cout << "  - MODULE_ONE is NOT defined" << std::endl;
 #endif
 
-#ifdef FIRST_TARGET
-    std::cout << "  - FIRST_TARGET is defined (value: " << FIRST_TARGET << ")" << std::endl;
-#else
-    std::cout << "  - FIRST_TARGET is NOT defined" << std::endl;
-#endif
-
 #ifdef MODULE_TWO
     std::cout << "  - MODULE_TWO is defined (value: " << MODULE_TWO << ")" << std::endl;
 #else
     std::cout << "  - MODULE_TWO is NOT defined" << std::endl;
-#endif
-
-#ifdef SECOND_TARGET
-    std::cout << "  - SECOND_TARGET is defined (value: " << SECOND_TARGET << ")" << std::endl;
-#else
-    std::cout << "  - SECOND_TARGET is NOT defined" << std::endl;
-#endif
-
-#ifdef EXTRA_FIRST
-    std::cout << "  - EXTRA_FIRST is defined (value: " << EXTRA_FIRST << ")" << std::endl;
-#else
-    std::cout << "  - EXTRA_FIRST is NOT defined" << std::endl;
 #endif
 
     std::cout << "  - Compiled by: FirstTarget.targets" << std::endl;

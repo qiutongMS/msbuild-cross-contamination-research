@@ -4,7 +4,7 @@
   <Target Name="CompileSecondDefinition" BeforeTargets="ClCompile" AfterTargets="BeforeClCompile;MakeDirsForCl">
     <ItemGroup>
       <ClCompile>
-        <PreprocessorDefinitions>MODULE_TWO=1;SECOND_TARGET=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+        <PreprocessorDefinitions>MODULE_TWO=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       </ClCompile>
     </ItemGroup>
   </Target>
@@ -13,7 +13,6 @@
     <ItemGroup>
       <ClCompile Include="SecondModule.cpp">
         <PrecompiledHeader>NotUsing</PrecompiledHeader>
-        <!-- <AdditionalOptions>/D MODULE_TWO=1 /D SECOND_TARGET=1 %(AdditionalOptions)</AdditionalOptions> -->
       </ClCompile>
     </ItemGroup>
   </Target>
